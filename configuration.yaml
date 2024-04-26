@@ -1,0 +1,27 @@
+service:
+  name: "betemplate"
+  httpPort: ":2222"
+  metricPort: 3333
+  debug: false
+  traceCollectorURL: ""
+  env: "dev"
+database:
+  host: "jl3ezzfsmyly8vt1.rwlb.rds.aliyuncs.com"
+  maxIdle: 10
+  maxOpen: 20
+  maxIdletime: "1m"
+  maxLifetime: "3m"
+  name: "be-template"
+  password: "!O&9hmyM&M@i@*Kf"
+  port: "3306"
+  user: "school_idea_user"
+  location: "Local"
+redis:
+  address: "47.97.126.207:6379"
+  password: "FEwG2zx7nPr2BAFC"
+  index: 2
+jwt:
+  accessTokenSecretKey: "pW01vkr0Mmm9q15Iep/Aeg=="
+  refreshTokenSecretKey: "oW01vkr0Mmm9q15Iep/Aeg=="
+  accessTokenDuration: "1h"
+  refreshTokenDuration: "360h"
