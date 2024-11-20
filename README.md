@@ -35,7 +35,7 @@
 ## 运行项目
 
 ```shell
-git clone https://gitlab.seakoi.net/engineer/backend/be-template
+git clone https://github.com/chaihaobo/go-backend-template
 make run
 ```
 
