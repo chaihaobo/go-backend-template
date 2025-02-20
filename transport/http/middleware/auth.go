@@ -4,14 +4,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/chaihaobo/gocommon/restkit"
 	"github.com/gin-gonic/gin"
 	"github.com/gobwas/glob"
 	"github.com/samber/lo"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/application"
-	"gitlab.seakoi.net/engineer/backend/be-template/constant"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
-	"gitlab.seakoi.net/engineer/backend/be-template/tools"
+	"github.com/chaihaobo/be-template/application"
+	"github.com/chaihaobo/be-template/constant"
+	"github.com/chaihaobo/be-template/resource"
 )
 
 const (
@@ -45,7 +45,7 @@ func AuthMiddleware(res resource.Resource, app application.Application) gin.Hand
 		}
 		token := gctx.GetHeader(headerKeyAuthorization)
 		if token == "" {
-			tools.HTTPWriteErr(gctx.Writer, constant.ErrUnauthorized)
+			restkit.HTTPWriteErr(gctx.Writer, constant.ErrUnauthorized)
 			gctx.Abort()
 			return
 		}
@@ -53,7 +53,7 @@ func AuthMiddleware(res resource.Resource, app application.Application) gin.Hand
 		userClaims, err := app.User().TokenManger().Verify(token)
 		if err != nil {
 			res.Logger().Error(gctx, "verify jwt token failed", err)
-			tools.HTTPWriteErr(gctx.Writer, constant.ErrUnauthorized)
+			restkit.HTTPWriteErr(gctx.Writer, constant.ErrUnauthorized)
 			gctx.Abort()
 		}
 		ctx := context.WithValue(gctx.Request.Context(), constant.ContextKeyUserID, userClaims.ID)

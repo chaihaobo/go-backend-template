@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"gitlab.seakoi.net/engineer/backend/be-template/tools/jwt"
+	"github.com/chaihaobo/be-template/tools/jwt"
 )
 
 type User struct {

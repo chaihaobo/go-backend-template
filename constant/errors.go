@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	commonerr "github.com/chaihaobo/gocommon/error"
+	"google.golang.org/grpc/codes"
 )
 
 //	Error constants; rule:  <projectID><moduleID><errorID>
@@ -36,4 +37,8 @@ var ServiceErrorCode2HTTPStatus = map[string]int{
 	ErrHealthCheckFailed.Code: http.StatusServiceUnavailable,
 	ErrUserNotFound.Code:      http.StatusBadRequest,
 	ErrUnauthorized.Code:      http.StatusUnauthorized,
+}
+
+var ServiceErrorCodeToGRPCErrorCode = map[string]codes.Code{
+	Successful.Code: codes.OK,
 }

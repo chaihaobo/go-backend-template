@@ -3,17 +3,12 @@ package client
 import (
 	"context"
 	"database/sql"
-	"log"
-	"os"
-	"time"
 
 	"github.com/chaihaobo/gocommon/mysql"
-	gormMysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/constant"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
+	"github.com/chaihaobo/be-template/constant"
+	"github.com/chaihaobo/be-template/resource"
 )
 
 type (
@@ -91,7 +86,7 @@ func (c *client) DB(ctx context.Context) *gorm.DB {
 
 func New(res resource.Resource) (Client, error) {
 	dbConfig := res.Configuration().Database
-	db, err := mysql.DB(mysql.Config{
+	gormDB, err := mysql.GormDB(mysql.Config{
 		Host:        dbConfig.Host,
 		Port:        dbConfig.Port,
 		User:        dbConfig.User,
@@ -103,24 +98,11 @@ func New(res resource.Resource) (Client, error) {
 		MaxIdleTime: int(dbConfig.MaxIdleTime.Minutes()),
 		Location:    dbConfig.Location,
 		ParseTime:   true,
-	})
+	}, nil)
 	if err != nil {
 		return nil, err
 	}
-	gormDB, err := gorm.Open(gormMysql.New(gormMysql.Config{
-		Conn: db,
-	}), &gorm.Config{
-		SkipDefaultTransaction: true,
-		Logger: logger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags),
-			logger.Config{
-				SlowThreshold:             time.Second,
-				LogLevel:                  logger.Warn,
-				IgnoreRecordNotFoundError: true,
-				Colorful:                  true,
-			},
-		),
-	})
+	db, err := gormDB.DB()
 	if err != nil {
 		return nil, err
 	}

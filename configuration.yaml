@@ -1,25 +1,26 @@
 service:
   name: "betemplate"
   httpPort: ":2222"
+  grpcPort: ":2223"
   metricPort: 3333
   debug: false
   traceCollectorURL: ""
   env: "dev"
 database:
-  host: "jl3ezzfsmyly8vt1.rwlb.rds.aliyuncs.com"
+  host: "localhost"
   maxIdle: 10
   maxOpen: 20
   maxIdletime: "1m"
   maxLifetime: "3m"
   name: "be-template"
-  password: "!O&9hmyM&M@i@*Kf"
+  password: "123456"
   port: "3306"
-  user: "school_idea_user"
+  user: "root"
   location: "Local"
 redis:
-  address: "47.97.126.207:6379"
-  password: "FEwG2zx7nPr2BAFC"
-  index: 2
+  address: "localhost:6379"
+  password: ""
+  index: 0
 jwt:
   accessTokenSecretKey: "pW01vkr0Mmm9q15Iep/Aeg=="
   refreshTokenSecretKey: "oW01vkr0Mmm9q15Iep/Aeg=="

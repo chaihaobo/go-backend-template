@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/cmd"
+	"github.com/chaihaobo/be-template/cmd"
 )
 
 func main() {

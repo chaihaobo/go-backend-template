@@ -1,0 +1,15 @@
+syntax = "proto3";
+package proto;
+option go_package = "github.com/chaihaobo/be-template/proto";
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloResponse {
+  string reply = 1;
+}
+
+service HelloService {
+  rpc SayHello (HelloRequest) returns (HelloResponse) {}
+}

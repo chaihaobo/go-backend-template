@@ -3,9 +3,9 @@ package health
 import (
 	"context"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/constant"
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
+	"github.com/chaihaobo/be-template/constant"
+	"github.com/chaihaobo/be-template/infrastructure"
+	"github.com/chaihaobo/be-template/resource"
 )
 
 type (

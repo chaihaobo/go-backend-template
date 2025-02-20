@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/cmd/core"
-	"gitlab.seakoi.net/engineer/backend/be-template/tools"
+	"github.com/chaihaobo/be-template/cmd/core"
+	"github.com/chaihaobo/be-template/tools"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -19,10 +19,10 @@ var rootCmd = &cobra.Command{
 func NewRoot() core.Cmder {
 	return core.CmderFunc(func(ctx *core.Context) *cobra.Command {
 		rootCmd.AddCommand(NewHTTP().Command(ctx))
+		rootCmd.AddCommand(NewGrpc().Command(ctx))
 		rootCmd.Run = func(cmd *cobra.Command, args []string) {
 			listenRoot(ctx)
 		}
-
 		return rootCmd
 	})
 }

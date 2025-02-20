@@ -21,6 +21,11 @@ run:
 generate-mock:
 	@mockery --all --keeptree --inpackage
 
+## generate proto files
+generate-proto:
+	@protoc --go_out=./proto --go-grpc_out=./proto ./proto/hello.proto
+
+
 
 .PHONY: help
 ## show help

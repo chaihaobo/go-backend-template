@@ -1,9 +1,9 @@
 package infrastructure
 
 import (
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure/cache"
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure/store"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
+	"github.com/chaihaobo/be-template/infrastructure/cache"
+	"github.com/chaihaobo/be-template/infrastructure/store"
+	"github.com/chaihaobo/be-template/resource"
 )
 
 type (

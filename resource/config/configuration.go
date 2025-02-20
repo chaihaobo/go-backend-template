@@ -11,6 +11,7 @@ type Configuration struct {
 	Service struct {
 		Name              string `yaml:"name"`
 		HTTPPort          string `yaml:"httpPort"`
+		GrpcPort          string `yaml:"grpcPort"`
 		MetricPort        int    `yaml:"metricPort"`
 		Debug             bool   `yaml:"debug"`
 		TraceCollectorURL string `yaml:"traceCollectorURL"`

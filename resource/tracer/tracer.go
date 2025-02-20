@@ -3,7 +3,7 @@ package tracer
 import (
 	"github.com/chaihaobo/gocommon/trace"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/resource/config"
+	"github.com/chaihaobo/be-template/resource/config"
 )
 
 type (

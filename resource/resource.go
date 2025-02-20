@@ -3,11 +3,11 @@ package resource
 import (
 	"context"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/resource/config"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource/logger"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource/metric"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource/tracer"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource/validator"
+	"github.com/chaihaobo/be-template/resource/config"
+	"github.com/chaihaobo/be-template/resource/logger"
+	"github.com/chaihaobo/be-template/resource/metric"
+	"github.com/chaihaobo/be-template/resource/tracer"
+	"github.com/chaihaobo/be-template/resource/validator"
 )
 
 type (

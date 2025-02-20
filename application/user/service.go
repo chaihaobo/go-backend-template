@@ -3,12 +3,12 @@ package user
 import (
 	"context"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure"
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure/store/repository/user"
-	userdto "gitlab.seakoi.net/engineer/backend/be-template/model/dto/user"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
-	"gitlab.seakoi.net/engineer/backend/be-template/tools/crypto"
-	"gitlab.seakoi.net/engineer/backend/be-template/tools/jwt"
+	"github.com/chaihaobo/be-template/infrastructure"
+	"github.com/chaihaobo/be-template/infrastructure/store/repository/user"
+	userdto "github.com/chaihaobo/be-template/model/dto/user"
+	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/tools/crypto"
+	"github.com/chaihaobo/be-template/tools/jwt"
 )
 
 type (

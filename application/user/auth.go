@@ -5,9 +5,9 @@ import (
 
 	"github.com/samber/lo"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/constant"
-	"gitlab.seakoi.net/engineer/backend/be-template/model/dto/user"
-	"gitlab.seakoi.net/engineer/backend/be-template/model/entity"
+	"github.com/chaihaobo/be-template/constant"
+	"github.com/chaihaobo/be-template/model/dto/user"
+	"github.com/chaihaobo/be-template/model/entity"
 )
 
 const (

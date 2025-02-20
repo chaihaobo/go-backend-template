@@ -3,8 +3,8 @@ package user
 import (
 	"context"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure/store/client"
-	"gitlab.seakoi.net/engineer/backend/be-template/model/entity"
+	"github.com/chaihaobo/be-template/infrastructure/store/client"
+	"github.com/chaihaobo/be-template/model/entity"
 )
 
 type (

@@ -3,13 +3,14 @@ package user
 import (
 	"github.com/gin-gonic/gin"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/application"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
+	"github.com/chaihaobo/be-template/application"
+	"github.com/chaihaobo/be-template/model/dto/user"
+	"github.com/chaihaobo/be-template/resource"
 )
 
 type (
 	Controller interface {
-		Login(ctx *gin.Context)
+		Login(ctx *gin.Context) (*user.LoginResponse, error)
 	}
 
 	controller struct {

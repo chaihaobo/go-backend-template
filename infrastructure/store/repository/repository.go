@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure/store/client"
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure/store/repository/user"
+	"github.com/chaihaobo/be-template/infrastructure/store/client"
+	"github.com/chaihaobo/be-template/infrastructure/store/repository/user"
 )
 
 type (

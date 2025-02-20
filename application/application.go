@@ -1,10 +1,10 @@
 package application
 
 import (
-	"gitlab.seakoi.net/engineer/backend/be-template/application/health"
-	"gitlab.seakoi.net/engineer/backend/be-template/application/user"
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
+	"github.com/chaihaobo/be-template/application/health"
+	"github.com/chaihaobo/be-template/application/user"
+	"github.com/chaihaobo/be-template/infrastructure"
+	"github.com/chaihaobo/be-template/resource"
 )
 
 type (

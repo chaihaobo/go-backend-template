@@ -3,7 +3,7 @@ package metric
 import (
 	"github.com/chaihaobo/gocommon/metric"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/resource/config"
+	"github.com/chaihaobo/be-template/resource/config"
 )
 
 type (

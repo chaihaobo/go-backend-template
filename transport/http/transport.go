@@ -5,14 +5,16 @@ import (
 	"net/http"
 
 	ginmiddewate "github.com/chaihaobo/gocommon/middleware/http/gin"
+	"github.com/chaihaobo/gocommon/restkit"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/application"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
-	"gitlab.seakoi.net/engineer/backend/be-template/transport/http/controller"
-	"gitlab.seakoi.net/engineer/backend/be-template/transport/http/middleware"
+	"github.com/chaihaobo/be-template/application"
+	"github.com/chaihaobo/be-template/model/dto/user"
+	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/transport/http/controller"
+	"github.com/chaihaobo/be-template/transport/http/middleware"
 )
 
 type (
@@ -52,12 +54,11 @@ func (t *transport) applyRoutes() {
 
 	userGroup := router.Group("/user")
 	{
-		userGroup.POST("/login", userController.Login)
+		userGroup.POST("/login", restkit.AdaptToGinHandler(restkit.HandlerFunc[*user.LoginResponse](userController.Login)))
 	}
 
 }
 
-// middware
 func NewTransport(res resource.Resource, app application.Application) Transport {
 	svcConfig := res.Configuration().Service
 	gin.SetMode(lo.If(svcConfig.Debug, gin.DebugMode).

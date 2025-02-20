@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gitlab.seakoi.net/engineer/backend/be-template/cmd/core"
-	"gitlab.seakoi.net/engineer/backend/be-template/tools"
-	"gitlab.seakoi.net/engineer/backend/be-template/transport/http"
+	"github.com/chaihaobo/be-template/cmd/core"
+	"github.com/chaihaobo/be-template/tools"
+	"github.com/chaihaobo/be-template/transport/http"
 )
 
 // rootCmd represents the base command when called without any subcommands

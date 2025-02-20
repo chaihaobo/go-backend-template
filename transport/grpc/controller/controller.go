@@ -1,26 +1,26 @@
-package health
+package controller
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"github.com/chaihaobo/be-template/application"
 	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/transport/grpc/controller/hello"
 )
 
 type (
 	Controller interface {
-		Health(ctx *gin.Context)
+		Hello() hello.Controller
 	}
-
 	controller struct {
-		app application.Application
-		res resource.Resource
+		hello hello.Controller
 	}
 )
 
+func (c controller) Hello() hello.Controller {
+	return c.hello
+}
+
 func NewController(res resource.Resource, app application.Application) Controller {
 	return &controller{
-		app: app,
-		res: res,
+		hello: hello.NewController(res, app),
 	}
 }

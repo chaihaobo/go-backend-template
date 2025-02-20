@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"gitlab.seakoi.net/engineer/backend/be-template/application"
-	"gitlab.seakoi.net/engineer/backend/be-template/cmd/cmder"
-	"gitlab.seakoi.net/engineer/backend/be-template/cmd/core"
-	"gitlab.seakoi.net/engineer/backend/be-template/infrastructure"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
-	"gitlab.seakoi.net/engineer/backend/be-template/transport"
+	"github.com/chaihaobo/be-template/application"
+	"github.com/chaihaobo/be-template/cmd/cmder"
+	"github.com/chaihaobo/be-template/cmd/core"
+	"github.com/chaihaobo/be-template/infrastructure"
+	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/transport"
 )
 
 func Execute() error {

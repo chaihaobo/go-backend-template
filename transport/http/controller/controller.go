@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"gitlab.seakoi.net/engineer/backend/be-template/application"
-	"gitlab.seakoi.net/engineer/backend/be-template/resource"
-	"gitlab.seakoi.net/engineer/backend/be-template/transport/http/controller/health"
-	"gitlab.seakoi.net/engineer/backend/be-template/transport/http/controller/user"
+	"github.com/chaihaobo/be-template/application"
+	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/transport/http/controller/health"
+	"github.com/chaihaobo/be-template/transport/http/controller/user"
 )
 
 type (
