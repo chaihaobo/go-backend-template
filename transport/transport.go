@@ -57,6 +57,7 @@ func (t *transport) HTTP() http.Transport {
 
 func New(res resource.Resource, app application.Application, httpTransport http.Transport, grpcTransport grpc.Transport) Transport {
 	return &transport{
+		res:  res,
 		http: httpTransport,
 		grpc: grpcTransport,
 	}
