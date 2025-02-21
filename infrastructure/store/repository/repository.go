@@ -1,8 +1,14 @@
 package repository
 
 import (
-	"github.com/chaihaobo/be-template/infrastructure/store/client"
+	"github.com/google/wire"
+
 	"github.com/chaihaobo/be-template/infrastructure/store/repository/user"
+)
+
+var ProviderSet = wire.NewSet(
+	user.NewRepository,
+	New,
 )
 
 type (
@@ -18,8 +24,10 @@ func (r *repository) User() user.Repository {
 	return r.userRepository
 }
 
-func New(client client.Client) Repository {
+func New(
+	userRepository user.Repository,
+) Repository {
 	return &repository{
-		userRepository: user.NewRepository(client),
+		userRepository: userRepository,
 	}
 }

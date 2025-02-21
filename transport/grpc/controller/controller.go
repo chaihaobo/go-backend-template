@@ -1,9 +1,16 @@
 package controller
 
 import (
+	"github.com/google/wire"
+
 	"github.com/chaihaobo/be-template/application"
 	"github.com/chaihaobo/be-template/resource"
 	"github.com/chaihaobo/be-template/transport/grpc/controller/hello"
+)
+
+var ProviderSet = wire.NewSet(
+	hello.NewController,
+	NewController,
 )
 
 type (

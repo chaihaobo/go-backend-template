@@ -3,10 +3,18 @@ package transport
 import (
 	"context"
 
+	"github.com/google/wire"
+
 	"github.com/chaihaobo/be-template/application"
 	"github.com/chaihaobo/be-template/resource"
 	"github.com/chaihaobo/be-template/transport/grpc"
 	"github.com/chaihaobo/be-template/transport/http"
+)
+
+var ProviderSet = wire.NewSet(
+	New,
+	http.ProviderSet,
+	grpc.ProviderSet,
 )
 
 type (
@@ -47,9 +55,7 @@ func (t *transport) HTTP() http.Transport {
 	return t.http
 }
 
-func New(res resource.Resource, app application.Application) Transport {
-	httpTransport := http.NewTransport(res, app)
-	grpcTransport := grpc.NewTransport(res, app)
+func New(res resource.Resource, app application.Application, httpTransport http.Transport, grpcTransport grpc.Transport) Transport {
 	return &transport{
 		http: httpTransport,
 		grpc: grpcTransport,

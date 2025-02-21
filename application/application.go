@@ -1,10 +1,16 @@
 package application
 
 import (
+	"github.com/google/wire"
+
 	"github.com/chaihaobo/be-template/application/health"
 	"github.com/chaihaobo/be-template/application/user"
-	"github.com/chaihaobo/be-template/infrastructure"
-	"github.com/chaihaobo/be-template/resource"
+)
+
+var ProviderSet = wire.NewSet(
+	health.NewService,
+	user.NewService,
+	New,
 )
 
 type (
@@ -27,9 +33,12 @@ func (a *application) Health() health.Service {
 	return a.health
 }
 
-func New(res resource.Resource, infra infrastructure.Infrastructure) Application {
+func New(
+	healthService health.Service,
+	userService user.Service,
+) Application {
 	return &application{
-		health: health.NewService(res, infra),
-		user:   user.NewService(res, infra),
+		health: healthService,
+		user:   userService,
 	}
 }

@@ -5,9 +5,14 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
+	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/chaihaobo/be-template/resource"
+)
+
+var ProviderSet = wire.NewSet(
+	NewClient,
 )
 
 type (

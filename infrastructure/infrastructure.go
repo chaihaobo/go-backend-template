@@ -1,9 +1,16 @@
 package infrastructure
 
 import (
+	"github.com/google/wire"
+
 	"github.com/chaihaobo/be-template/infrastructure/cache"
 	"github.com/chaihaobo/be-template/infrastructure/store"
-	"github.com/chaihaobo/be-template/resource"
+)
+
+var ProviderSet = wire.NewSet(
+	cache.ProviderSet,
+	store.ProviderSet,
+	New,
 )
 
 type (
@@ -40,19 +47,9 @@ func (i *infrastructure) Store() store.Store {
 	return i.store
 }
 
-func New(res resource.Resource) (Infrastructure, error) {
-	store, err := store.New(res)
-	if err != nil {
-		return nil, err
-	}
-
-	cacheClient, err := cache.NewClient(res)
-	if err != nil {
-		return nil, err
-	}
-
+func New(store store.Store, cacheClient cache.Client) Infrastructure {
 	return &infrastructure{
 		store: store,
 		cache: cacheClient,
-	}, nil
+	}
 }

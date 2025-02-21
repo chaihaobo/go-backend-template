@@ -7,6 +7,7 @@ import (
 	ginmiddewate "github.com/chaihaobo/gocommon/middleware/http/gin"
 	"github.com/chaihaobo/gocommon/restkit"
 	"github.com/gin-gonic/gin"
+	"github.com/google/wire"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 
@@ -15,6 +16,11 @@ import (
 	"github.com/chaihaobo/be-template/resource"
 	"github.com/chaihaobo/be-template/transport/http/controller"
 	"github.com/chaihaobo/be-template/transport/http/middleware"
+)
+
+var ProviderSet = wire.NewSet(
+	NewTransport,
+	controller.ProviderSet,
 )
 
 type (
@@ -59,7 +65,7 @@ func (t *transport) applyRoutes() {
 
 }
 
-func NewTransport(res resource.Resource, app application.Application) Transport {
+func NewTransport(res resource.Resource, app application.Application, controller controller.Controller) Transport {
 	svcConfig := res.Configuration().Service
 	gin.SetMode(lo.If(svcConfig.Debug, gin.DebugMode).
 		Else(gin.ReleaseMode))
@@ -73,7 +79,7 @@ func NewTransport(res resource.Resource, app application.Application) Transport 
 	tsp := &transport{
 		resource:   res,
 		engine:     engine,
-		controller: controller.New(res, app),
+		controller: controller,
 		server:     &http.Server{Addr: svcConfig.HTTPPort, Handler: engine},
 	}
 	tsp.applyRoutes()

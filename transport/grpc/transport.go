@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/google/wire"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -16,6 +17,11 @@ import (
 	"github.com/chaihaobo/be-template/proto"
 	"github.com/chaihaobo/be-template/resource"
 	"github.com/chaihaobo/be-template/transport/grpc/controller"
+)
+
+var ProviderSet = wire.NewSet(
+	NewTransport,
+	controller.ProviderSet,
 )
 
 type (
@@ -49,7 +55,7 @@ func (t transport) GracefulStop() {
 	t.server.GracefulStop()
 }
 
-func NewTransport(res resource.Resource, app application.Application) Transport {
+func NewTransport(res resource.Resource, app application.Application, controller controller.Controller) Transport {
 	serviceConfig := res.Configuration().Service
 	commonIntercept := commonGrpc.WithDefault(constant.ServiceErrorCodeToGRPCErrorCode)
 
@@ -61,7 +67,7 @@ func NewTransport(res resource.Resource, app application.Application) Transport 
 	return &transport{
 		resource:   res,
 		app:        app,
-		controller: controller.NewController(res, app),
+		controller: controller,
 		server:     server,
 	}
 

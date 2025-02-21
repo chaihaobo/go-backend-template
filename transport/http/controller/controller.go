@@ -1,10 +1,16 @@
 package controller
 
 import (
-	"github.com/chaihaobo/be-template/application"
-	"github.com/chaihaobo/be-template/resource"
+	"github.com/google/wire"
+
 	"github.com/chaihaobo/be-template/transport/http/controller/health"
 	"github.com/chaihaobo/be-template/transport/http/controller/user"
+)
+
+var ProviderSet = wire.NewSet(
+	health.NewController,
+	user.NewController,
+	New,
 )
 
 type (
@@ -27,9 +33,9 @@ func (c *controllers) Health() health.Controller {
 	return c.healthController
 }
 
-func New(res resource.Resource, app application.Application) Controller {
+func New(healthController health.Controller, userController user.Controller) Controller {
 	return &controllers{
-		healthController: health.NewController(res, app),
-		userController:   user.NewController(res, app),
+		healthController: healthController,
+		userController:   userController,
 	}
 }

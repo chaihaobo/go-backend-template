@@ -5,10 +5,15 @@ import (
 	"database/sql"
 
 	"github.com/chaihaobo/gocommon/mysql"
+	"github.com/google/wire"
 	"gorm.io/gorm"
 
 	"github.com/chaihaobo/be-template/constant"
 	"github.com/chaihaobo/be-template/resource"
+)
+
+var (
+	ProviderSet = wire.NewSet(New)
 )
 
 type (

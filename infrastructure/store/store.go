@@ -1,9 +1,16 @@
 package store
 
 import (
+	"github.com/google/wire"
+
 	"github.com/chaihaobo/be-template/infrastructure/store/client"
 	"github.com/chaihaobo/be-template/infrastructure/store/repository"
-	"github.com/chaihaobo/be-template/resource"
+)
+
+var ProviderSet = wire.NewSet(
+	client.ProviderSet,
+	repository.ProviderSet,
+	New,
 )
 
 type (
@@ -25,14 +32,9 @@ func (s *store) Client() client.Client {
 	return s.client
 }
 
-func New(res resource.Resource) (Store, error) {
-	client, err := client.New(res)
-	if err != nil {
-		return nil, err
-	}
+func New(client client.Client, repository repository.Repository) (Store, error) {
 	return &store{
 		client:     client,
-		repository: repository.New(client),
+		repository: repository,
 	}, nil
-
 }

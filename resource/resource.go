@@ -26,7 +26,6 @@ type (
 		validator     validator.Validator
 		metric        metric.PrometheusMetric
 		tracer        tracer.Tracer
-		loggerFlusher func() error
 	}
 )
 
@@ -49,7 +48,6 @@ func (r *resource) Logger() logger.Logger {
 func (r *resource) Close() error {
 	ctx := context.Background()
 	closeFuncs := []func() error{
-		r.loggerFlusher,
 		func() error {
 			return r.metric.Close(ctx)
 		},
@@ -70,46 +68,12 @@ func (r *resource) Configuration() *config.Configuration {
 	return r.configuration
 }
 
-func New(configPath string) (Resource, error) {
-	configuration, err := config.NewConfiguration(configPath)
-	if err != nil {
-		return nil, err
-	}
-
-	logConfig := configuration.Logger
-	logger, f, err := logger.New(logger.Config{
-		FileName:   logConfig.FileName,
-		MaxSize:    logConfig.MaxSize,
-		MaxAge:     logConfig.MaxAge,
-		WithCaller: true,
-		CallerSkip: 1,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	validator, err := validator.NewValidator()
-	if err != nil {
-		return nil, err
-
-	}
-
-	prometheusMetric, err := metric.NewPrometheusMetric(configuration)
-	if err != nil {
-		return nil, err
-	}
-
-	tracer, err := tracer.NewTracer(configuration)
-	if err != nil {
-		return nil, err
-	}
-
+func NewResource(configuration *config.Configuration, log logger.Logger, validator validator.Validator, prometheusMetric metric.PrometheusMetric, tracer tracer.Tracer) Resource {
 	return &resource{
 		configuration: configuration,
-		logger:        logger,
+		logger:        log,
 		validator:     validator,
-		loggerFlusher: f,
 		metric:        prometheusMetric,
 		tracer:        tracer,
-	}, nil
+	}
 }
