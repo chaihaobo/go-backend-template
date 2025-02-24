@@ -1,13 +1,13 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/chaihaobo/be-template/cmd"
 )
 
 func main() {
 	if err := cmd.Execute(); err != nil {
-		log.Println("application run failed:", err.Error())
+		slog.Error("application run failed:", slog.String("error", err.Error()))
 	}
 }

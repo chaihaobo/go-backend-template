@@ -1,7 +1,7 @@
 package tools
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,6 +18,6 @@ func GracefulShutdown(actions ...func() error) {
 			panic(err)
 		}
 	})
-	log.Println("graceful shutdown successful")
+	slog.Error("graceful shutdown successful")
 
 }
