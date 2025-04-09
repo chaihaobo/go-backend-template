@@ -28,7 +28,7 @@ func initialContext() (*core.Context, error) {
 		return nil, err
 	}
 	app := application.New(res, infra)
-	tsp := transport.New(res, app)
+	tsp := transport.New(res, infra, app)
 	ctx := core.NewContext(res, infra, tsp)
 	return ctx, nil
 }

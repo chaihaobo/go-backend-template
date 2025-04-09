@@ -9,7 +9,7 @@ import (
 
 type (
 	Controller interface {
-		Health(ctx *gin.Context)
+		Health(ctx *gin.Context) (any, error)
 	}
 
 	controller struct {

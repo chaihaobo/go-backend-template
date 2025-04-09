@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chaihaobo/be-template/cmd/core"
-	"github.com/chaihaobo/be-template/tools"
 	"github.com/chaihaobo/be-template/transport/http"
+	"github.com/chaihaobo/be-template/utils"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -31,5 +31,5 @@ func listenHTTP(ctx *core.Context, http http.Transport) {
 			ctx.Resource.Logger().Error(context.Background(), "listen http failed", err)
 		}
 	}()
-	tools.GracefulShutdown(http.Shutdown, ctx.Resource.Close)
+	utils.GracefulShutdown(http.Shutdown, ctx.Resource.Close)
 }

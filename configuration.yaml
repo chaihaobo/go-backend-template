@@ -1,11 +1,12 @@
 service:
   name: "betemplate"
-  httpPort: ":2222"
-  grpcPort: ":2223"
+  httpPort: 2222
+  grpcPort: 2223
   metricPort: 3333
   debug: false
   traceCollectorURL: ""
   env: "dev"
+  discoveryServerURL: "http://localhost:8500"
 database:
   host: "localhost"
   maxIdle: 10

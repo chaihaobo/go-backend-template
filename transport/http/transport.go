@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	ginmiddewate "github.com/chaihaobo/gocommon/middleware/http/gin"
@@ -11,10 +12,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/chaihaobo/be-template/application"
+	"github.com/chaihaobo/be-template/infrastructure"
+	"github.com/chaihaobo/be-template/infrastructure/discovery"
 	"github.com/chaihaobo/be-template/model/dto/user"
 	"github.com/chaihaobo/be-template/resource"
 	"github.com/chaihaobo/be-template/transport/http/controller"
 	"github.com/chaihaobo/be-template/transport/http/middleware"
+	"github.com/chaihaobo/be-template/utils"
 )
 
 type (
@@ -26,31 +30,53 @@ type (
 	transport struct {
 		resource   resource.Resource
 		engine     *gin.Engine
+		infra      infrastructure.Infrastructure
 		controller controller.Controller
 		server     *http.Server
+		serviceID  string
 	}
 )
 
 func (t *transport) Serve() error {
 	var (
-		addr = t.resource.Configuration().Service.HTTPPort
+		port = t.resource.Configuration().Service.HTTPPort
 		name = t.resource.Configuration().Service.Name
 	)
-	t.resource.Logger().Info(context.TODO(), "http server started",
+	ip, err := utils.GetOutboundIP()
+	if err != nil {
+		return err
+	}
+	ctx := context.TODO()
+	serviceID, err := t.infra.DiscoveryClient().RegisterService(ctx, &discovery.Service{
+		Name:            fmt.Sprintf("%s-http", name),
+		IP:              ip,
+		Port:            port,
+		Type:            discovery.ServiceTypeHTTP,
+		HealthCheckPath: "/health",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to register service to consul: %w", err)
+	}
+	t.serviceID = serviceID
+	t.resource.Logger().Info(ctx, "http server started",
 		zap.String("name", name),
-		zap.String("addr", addr))
+		zap.Int("port", port))
 	return t.server.ListenAndServe()
 }
 
 func (t *transport) Shutdown() error {
-	return t.server.Shutdown(context.TODO())
+	ctx := context.TODO()
+	if err := t.infra.DiscoveryClient().DeregisterService(ctx, t.serviceID); err != nil {
+		t.resource.Logger().Error(ctx, "failed to deregister http service from consul", err)
+	}
+	return t.server.Shutdown(ctx)
 }
 
 func (t *transport) applyRoutes() {
 	router := t.engine
 	healthController := t.controller.Health()
 	userController := t.controller.User()
-	router.GET("/health", healthController.Health)
+	router.GET("/health", restkit.AdaptToGinHandler(restkit.HandlerFunc[any](healthController.Health)))
 
 	userGroup := router.Group("/user")
 	{
@@ -59,7 +85,7 @@ func (t *transport) applyRoutes() {
 
 }
 
-func NewTransport(res resource.Resource, app application.Application) Transport {
+func NewTransport(res resource.Resource, infra infrastructure.Infrastructure, app application.Application) Transport {
 	svcConfig := res.Configuration().Service
 	gin.SetMode(lo.If(svcConfig.Debug, gin.DebugMode).
 		Else(gin.ReleaseMode))
@@ -73,8 +99,9 @@ func NewTransport(res resource.Resource, app application.Application) Transport 
 	tsp := &transport{
 		resource:   res,
 		engine:     engine,
+		infra:      infra,
 		controller: controller.New(res, app),
-		server:     &http.Server{Addr: svcConfig.HTTPPort, Handler: engine},
+		server:     &http.Server{Addr: fmt.Sprintf(":%d", svcConfig.HTTPPort), Handler: engine},
 	}
 	tsp.applyRoutes()
 	return tsp

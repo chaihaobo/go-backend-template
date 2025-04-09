@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chaihaobo/be-template/cmd/core"
-	"github.com/chaihaobo/be-template/tools"
 	"github.com/chaihaobo/be-template/transport/grpc"
+	
 )
 
 // grpcCmd will start the grpc server
@@ -31,7 +31,7 @@ func listenGrpc(ctx *core.Context, grpc grpc.Transport) {
 			ctx.Resource.Logger().Error(context.Background(), "listen grpc failed", err)
 		}
 	}()
-	tools.GracefulShutdown(func() error {
+	utils.GracefulShutdown(func() error {
 		grpc.GracefulStop()
 		return nil
 	}, ctx.Resource.Close)

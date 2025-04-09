@@ -3,6 +3,9 @@ package resource
 import (
 	"context"
 
+	"github.com/chaihaobo/gocommon/constant"
+
+	svcconstant "github.com/chaihaobo/be-template/constant"
 	"github.com/chaihaobo/be-template/resource/config"
 	"github.com/chaihaobo/be-template/resource/logger"
 	"github.com/chaihaobo/be-template/resource/metric"
@@ -75,7 +78,7 @@ func New(configPath string) (Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	constant.MergeServiceErrorCode2HTTPStatus(svcconstant.ServiceErrorCode2HTTPStatus)
 	logConfig := configuration.Logger
 	logger, f, err := logger.New(logger.Config{
 		FileName:   logConfig.FileName,

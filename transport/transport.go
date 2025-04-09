@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/chaihaobo/be-template/application"
+	"github.com/chaihaobo/be-template/infrastructure"
 	"github.com/chaihaobo/be-template/resource"
 	"github.com/chaihaobo/be-template/transport/grpc"
 	"github.com/chaihaobo/be-template/transport/http"
@@ -16,7 +17,6 @@ type (
 		HTTP() http.Transport
 		Grpc() grpc.Transport
 	}
-
 	transport struct {
 		res  resource.Resource
 		http http.Transport
@@ -29,6 +29,7 @@ func (t *transport) Grpc() grpc.Transport {
 }
 
 func (t *transport) ShutdownAll() error {
+	t.grpc.GracefulStop()
 	return t.http.Shutdown()
 }
 
@@ -47,9 +48,9 @@ func (t *transport) HTTP() http.Transport {
 	return t.http
 }
 
-func New(res resource.Resource, app application.Application) Transport {
-	httpTransport := http.NewTransport(res, app)
-	grpcTransport := grpc.NewTransport(res, app)
+func New(res resource.Resource, infra infrastructure.Infrastructure, app application.Application) Transport {
+	httpTransport := http.NewTransport(res, infra, app)
+	grpcTransport := grpc.NewTransport(res, infra, app)
 	return &transport{
 		http: httpTransport,
 		grpc: grpcTransport,

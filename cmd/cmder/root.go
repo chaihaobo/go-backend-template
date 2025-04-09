@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chaihaobo/be-template/cmd/core"
-	"github.com/chaihaobo/be-template/tools"
+	"github.com/chaihaobo/be-template/utils"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -34,6 +34,6 @@ func listenRoot(ctx *core.Context) {
 		}
 	}()
 
-	tools.GracefulShutdown(ctx.Transport.ShutdownAll)
+	utils.GracefulShutdown(ctx.Transport.ShutdownAll)
 
 }

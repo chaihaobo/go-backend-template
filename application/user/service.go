@@ -7,8 +7,8 @@ import (
 	"github.com/chaihaobo/be-template/infrastructure/store/repository/user"
 	userdto "github.com/chaihaobo/be-template/model/dto/user"
 	"github.com/chaihaobo/be-template/resource"
-	"github.com/chaihaobo/be-template/tools/crypto"
-	"github.com/chaihaobo/be-template/tools/jwt"
+	"github.com/chaihaobo/be-template/utils/crypto"
+	"github.com/chaihaobo/be-template/utils/jwt"
 )
 
 type (

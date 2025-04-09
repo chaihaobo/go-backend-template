@@ -7,16 +7,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Configuration struct {
+type (
+	// Configuration is the configuration of the application.
+	Configuration struct {
+		Service  Service  `yaml:"service"`
+		Database Database `yaml:"database"`
+		Logger   Logger   `yaml:"logger"`
+		Redis    Redis    `yaml:"redis"`
+		JWT      JWT      `yaml:"jwt"`
+	}
+	// Service is the configuration of the service.
 	Service struct {
-		Name              string `yaml:"name"`
-		HTTPPort          string `yaml:"httpPort"`
-		GrpcPort          string `yaml:"grpcPort"`
-		MetricPort        int    `yaml:"metricPort"`
-		Debug             bool   `yaml:"debug"`
-		TraceCollectorURL string `yaml:"traceCollectorURL"`
-		Env               string `yaml:"env"`
-	} `yaml:"service"`
+		Name               string `yaml:"name"`
+		HTTPPort           int    `yaml:"httpPort"`
+		GrpcPort           int    `yaml:"grpcPort"`
+		MetricPort         int    `yaml:"metricPort"`
+		Debug              bool   `yaml:"debug"`
+		TraceCollectorURL  string `yaml:"traceCollectorURL"`
+		Env                string `yaml:"env"`
+		DiscoveryServerURL string `yaml:"discoveryServerURL"`
+	}
+
+	// Database is the configuration of the database.
 	Database struct {
 		Host        string        `yaml:"host"`
 		Port        string        `yaml:"port"`
@@ -28,24 +40,30 @@ type Configuration struct {
 		MaxLifetime time.Duration `yaml:"maxLifetime"`
 		MaxIdleTime time.Duration `yaml:"maxIdleTime"`
 		Location    string        `yaml:"location"`
-	} `yaml:"database"`
+	}
+
+	// Logger is the configuration of the logger.
 	Logger struct {
 		FileName string
 		MaxSize  int
 		MaxAge   int
 	}
+
+	// Redis is the configuration of the redis.
 	Redis struct {
 		Address  string `yaml:"address"`
 		Password string `yaml:"password"`
 		Index    int    `yaml:"index"`
-	} `yaml:"redis"`
+	}
+
+	// JWT is the configuration of the jwt.
 	JWT struct {
 		AccessTokenSecretKey  string        `yaml:"accessTokenSecretKey"`
 		RefreshTokenSecretKey string        `yaml:"refreshTokenSecretKey"`
 		AccessTokenDuration   time.Duration `yaml:"accessTokenDuration"`
 		RefreshTokenDuration  time.Duration `yaml:"refreshTokenDuration"`
-	} `yaml:"jwt"`
-}
+	}
+)
 
 func NewConfiguration(path string) (*Configuration, error) {
 	configRawFile, err := os.Open(path)
