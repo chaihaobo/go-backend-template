@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/chaihaobo/gocommon/constant"
+	"github.com/fsnotify/fsnotify"
+	"go.uber.org/zap"
 
 	svcconstant "github.com/chaihaobo/be-template/constant"
 	"github.com/chaihaobo/be-template/resource/config"
@@ -90,6 +92,13 @@ func New(configPath string) (Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx := context.Background()
+	configuration.OnConfigChange(func(e fsnotify.Event) {
+		logger.Info(ctx, "config changed", zap.Any("event", e))
+		if err := configuration.Unmarshal(configuration); err != nil {
+			logger.Error(ctx, "failed to unmarshal changed config", err)
+		}
+	})
 
 	validator, err := validator.NewValidator()
 	if err != nil {

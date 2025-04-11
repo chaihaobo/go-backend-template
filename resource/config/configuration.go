@@ -1,15 +1,18 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
+	_ "github.com/spf13/viper/remote"
 )
 
 type (
 	// Configuration is the configuration of the application.
 	Configuration struct {
+		*viper.Viper
 		Service  Service  `yaml:"service"`
 		Database Database `yaml:"database"`
 		Logger   Logger   `yaml:"logger"`
@@ -66,16 +69,75 @@ type (
 )
 
 func NewConfiguration(path string) (*Configuration, error) {
-	configRawFile, err := os.Open(path)
+	vp := viper.New()
+	vp.SetConfigFile(path)
+	vp.SetConfigType("yaml")
+	configuration := new(Configuration)
+	configuration.Viper = vp
+	remoteConfigSetupOK, err := configuration.setupRemoteConfig()
 	if err != nil {
 		return nil, err
 	}
-	defer configRawFile.Close()
-	configuration := new(Configuration)
+	if remoteConfigSetupOK {
+		return configuration, nil
+	}
 
-	yamlDecoder := yaml.NewDecoder(configRawFile)
-	if err := yamlDecoder.Decode(configuration); err != nil {
+	if err := configuration.setupLocalConfig(); err != nil {
 		return nil, err
 	}
 	return configuration, nil
+}
+
+func (c *Configuration) setupRemoteConfig() (bool, error) {
+	// 判断配置中心配置是否存在
+	envConsulConfigEndpoint := os.Getenv("CONSUL_CONFIG_ENDPOINT")
+	envConsulConfigPath := os.Getenv("CONSUL_CONFIG_PATH")
+	if envConsulConfigPath == "" || envConsulConfigEndpoint == "" {
+		return false, nil
+	}
+	if err := c.AddRemoteProvider("consul", envConsulConfigEndpoint, envConsulConfigPath); err != nil {
+		return false, err
+	}
+	if err := c.ReadRemoteConfig(); err != nil {
+		return false, err
+	}
+	if err := c.Unmarshal(c); err != nil {
+		return false, err
+	}
+	go c.watchRemote()
+	return true, nil
+
+}
+
+func (c *Configuration) setupLocalConfig() error {
+	if err := c.ReadInConfig(); err != nil {
+		return err
+	}
+	if err := c.Unmarshal(c); err != nil {
+		return err
+	}
+	c.WatchConfig()
+	return nil
+}
+
+func (c *Configuration) watchRemote() {
+	for {
+		select {
+		case <-time.Tick(time.Second * 10):
+			c.pullRemoteConfig()
+		}
+
+	}
+}
+
+func (c *Configuration) pullRemoteConfig() {
+	if err := c.WatchRemoteConfig(); err != nil {
+		slog.Error("watch remote config failed", slog.String("error", err.Error()))
+		return
+	}
+	if err := c.Unmarshal(c); err != nil {
+		slog.Error("unmarshal remote config failed", slog.String("error", err.Error()))
+		return
+	}
+	return
 }

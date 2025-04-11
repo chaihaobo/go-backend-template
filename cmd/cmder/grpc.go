@@ -7,7 +7,7 @@ import (
 
 	"github.com/chaihaobo/be-template/cmd/core"
 	"github.com/chaihaobo/be-template/transport/grpc"
-	
+	"github.com/chaihaobo/be-template/utils"
 )
 
 // grpcCmd will start the grpc server
