@@ -13,9 +13,9 @@ import (
 
 	"github.com/chaihaobo/be-template/application"
 	"github.com/chaihaobo/be-template/infrastructure"
-	"github.com/chaihaobo/be-template/infrastructure/discovery"
 	"github.com/chaihaobo/be-template/model/dto/user"
 	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/resource/discovery"
 	"github.com/chaihaobo/be-template/transport/http/controller"
 	"github.com/chaihaobo/be-template/transport/http/middleware"
 	"github.com/chaihaobo/be-template/utils"
@@ -47,7 +47,7 @@ func (t *transport) Serve() error {
 		return err
 	}
 	ctx := context.TODO()
-	serviceID, err := t.infra.DiscoveryClient().RegisterService(ctx, &discovery.Service{
+	serviceID, err := t.resource.Discovery().RegisterService(ctx, &discovery.Service{
 		Name:            fmt.Sprintf("%s-http", name),
 		IP:              ip,
 		Port:            port,
@@ -66,7 +66,7 @@ func (t *transport) Serve() error {
 
 func (t *transport) Shutdown() error {
 	ctx := context.TODO()
-	if err := t.infra.DiscoveryClient().DeregisterService(ctx, t.serviceID); err != nil {
+	if err := t.resource.Discovery().DeregisterService(ctx, t.serviceID); err != nil {
 		t.resource.Logger().Error(ctx, "failed to deregister http service from consul", err)
 	}
 	return t.server.Shutdown(ctx)

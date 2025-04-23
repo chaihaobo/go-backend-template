@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"github.com/chaihaobo/be-template/infrastructure/cache"
-	"github.com/chaihaobo/be-template/infrastructure/discovery"
 	"github.com/chaihaobo/be-template/infrastructure/store"
 	"github.com/chaihaobo/be-template/resource"
 )
@@ -11,20 +10,14 @@ type (
 	Infrastructure interface {
 		Store() store.Store
 		Cache() cache.Client
-		DiscoveryClient() discovery.Client
 		Close() error
 	}
 
 	infrastructure struct {
-		store           store.Store
-		cache           cache.Client
-		discoveryClient discovery.Client
+		store store.Store
+		cache cache.Client
 	}
 )
-
-func (i *infrastructure) DiscoveryClient() discovery.Client {
-	return i.discoveryClient
-}
 
 func (i *infrastructure) Close() error {
 	closeFuncs := []func() error{
@@ -57,14 +50,12 @@ func New(res resource.Resource) (Infrastructure, error) {
 	if err != nil {
 		return nil, err
 	}
-	discoveryClient, err := discovery.NewConsulClient(res)
 	if err != nil {
 		return nil, err
 	}
 
 	return &infrastructure{
-		store:           store,
-		cache:           cacheClient,
-		discoveryClient: discoveryClient,
+		store: store,
+		cache: cacheClient,
 	}, nil
 }

@@ -17,9 +17,9 @@ import (
 	"github.com/chaihaobo/be-template/application"
 	"github.com/chaihaobo/be-template/constant"
 	"github.com/chaihaobo/be-template/infrastructure"
-	"github.com/chaihaobo/be-template/infrastructure/discovery"
 	"github.com/chaihaobo/be-template/proto"
 	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/resource/discovery"
 	"github.com/chaihaobo/be-template/transport/grpc/controller"
 	"github.com/chaihaobo/be-template/utils"
 )
@@ -47,7 +47,7 @@ func (t *transport) Serve() error {
 	if err != nil {
 		return fmt.Errorf("failed to get outbound ip: %w", err)
 	}
-	serviceID, err := t.infra.DiscoveryClient().RegisterService(context.Background(), &discovery.Service{
+	serviceID, err := t.resource.Discovery().RegisterService(context.Background(), &discovery.Service{
 		Name: fmt.Sprintf("%s-grpc", t.resource.Configuration().Service.Name),
 		IP:   ip,
 		Port: grpcPort,
@@ -71,7 +71,7 @@ func (t *transport) Serve() error {
 
 // GracefulStop Grpc Server
 func (t *transport) GracefulStop() {
-	if err := t.infra.DiscoveryClient().DeregisterService(context.Background(), t.serviceID); err != nil {
+	if err := t.resource.Discovery().DeregisterService(context.Background(), t.serviceID); err != nil {
 		t.resource.Logger().Error(context.Background(), "failed to deregister service from consul", err)
 	}
 	t.server.GracefulStop()

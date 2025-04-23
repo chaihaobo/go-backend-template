@@ -9,6 +9,7 @@ import (
 
 	svcconstant "github.com/chaihaobo/be-template/constant"
 	"github.com/chaihaobo/be-template/resource/config"
+	"github.com/chaihaobo/be-template/resource/discovery"
 	"github.com/chaihaobo/be-template/resource/logger"
 	"github.com/chaihaobo/be-template/resource/metric"
 	"github.com/chaihaobo/be-template/resource/tracer"
@@ -22,6 +23,7 @@ type (
 		Validator() validator.Validator
 		Metric() metric.PrometheusMetric
 		Tracer() tracer.Tracer
+		Discovery() discovery.Client
 		Close() error
 	}
 
@@ -31,9 +33,14 @@ type (
 		validator     validator.Validator
 		metric        metric.PrometheusMetric
 		tracer        tracer.Tracer
+		discovery     discovery.Client
 		loggerFlusher func() error
 	}
 )
+
+func (r *resource) Discovery() discovery.Client {
+	return r.discovery
+}
 
 func (r *resource) Tracer() tracer.Tracer {
 	return r.tracer
@@ -116,6 +123,11 @@ func New(configPath string) (Resource, error) {
 		return nil, err
 	}
 
+	discoveryClient, err := discovery.NewConsulClient(configuration)
+	if err != nil {
+		return nil, err
+	}
+
 	return &resource{
 		configuration: configuration,
 		logger:        logger,
@@ -123,5 +135,6 @@ func New(configPath string) (Resource, error) {
 		loggerFlusher: f,
 		metric:        prometheusMetric,
 		tracer:        tracer,
+		discovery:     discoveryClient,
 	}, nil
 }

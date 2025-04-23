@@ -6,7 +6,7 @@ service:
   debug: false
   traceCollectorURL: ""
   env: "dev"
-  discoveryServerURL: "http://localhost:8500"
+  discoveryServerURL: ""
 database:
   host: "localhost"
   maxIdle: 10

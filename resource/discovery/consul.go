@@ -6,11 +6,10 @@ import (
 
 	"github.com/hashicorp/consul/api"
 
-	"github.com/chaihaobo/be-template/resource"
+	"github.com/chaihaobo/be-template/resource/config"
 )
 
 type consulClient struct {
-	res       resource.Resource
 	consulAPI *api.Client
 }
 
@@ -48,18 +47,17 @@ func (c consulClient) RegisterService(ctx context.Context, service *Service) (st
 	})
 }
 
-func NewConsulClient(res resource.Resource) (Client, error) {
-	config := api.DefaultConfig()
-	config.Address = res.Configuration().Service.DiscoveryServerURL
-	if config.Address == "" {
+func NewConsulClient(config *config.Configuration) (Client, error) {
+	apiConfig := api.DefaultConfig()
+	apiConfig.Address = config.Service.DiscoveryServerURL
+	if apiConfig.Address == "" {
 		return noopClient{}, nil
 	}
-	client, err := api.NewClient(config)
+	client, err := api.NewClient(apiConfig)
 	if err != nil {
 		return nil, err
 	}
 	return &consulClient{
-		res:       res,
 		consulAPI: client,
 	}, nil
 }
