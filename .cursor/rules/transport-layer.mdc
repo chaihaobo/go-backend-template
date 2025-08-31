@@ -1,0 +1,122 @@
+---
+globs: transport/**/*.go
+description: transport层API接口开发规范
+---
+
+# Transport层开发规范
+
+## 职责定义
+transport层是API接口入口层，负责各种API协议实现的端口，只做报文或数据结构的解析和转换。
+
+## 代码结构规范
+
+### 1. Transport接口定义
+```go
+type Transport interface {
+    Serve() error
+    Shutdown() error  // HTTP
+    GracefulStop()    // gRPC
+}
+```
+
+### 2. Controller接口定义
+```go
+type Controller interface {
+    MethodName(ctx context.Context, req *RequestDTO) (*ResponseDTO, error)
+}
+```
+
+## HTTP传输层规范
+
+### 1. 路由定义
+参考 [transport/http/transport.go](mdc:transport/http/transport.go):
+```go
+router.GET("/health", restkit.AdaptToGinHandler(restkit.HandlerFunc[any](healthController.Health)))
+router.POST("/user/login", restkit.AdaptToGinHandler(restkit.HandlerFunc[*user.LoginResponse](userController.Login)))
+```
+
+### 2. 中间件使用
+- 认证中间件: [transport/http/middleware/auth.go](mdc:transport/http/middleware/auth.go)
+- 日志中间件: ginmiddewate.TelemetryMiddleware
+- 恢复中间件: gin.Recovery()
+
+### 3. 控制器实现
+参考 [transport/http/controller/](mdc:transport/http/controller/):
+- 只负责HTTP请求/响应的处理
+- 调用application层的业务逻辑
+- 进行数据格式转换
+
+## gRPC传输层规范
+
+### 1. 服务注册
+参考 [transport/grpc/transport.go](mdc:transport/grpc/transport.go):
+```go
+proto.RegisterHelloServiceServer(t.server, t.controller.Hello())
+healthpb.RegisterHealthServer(t.server, health.NewServer())
+```
+
+### 2. 拦截器配置
+```go
+chainedUnaryInterceptor := grpc.ChainUnaryInterceptor(
+    commonGrpc.TelemetryUnaryServerInterceptor(serviceConfig.Name, serviceConfig.Env, res.Logger()),
+)
+```
+
+### 3. 控制器实现
+参考 [transport/grpc/controller/](mdc:transport/grpc/controller/):
+- 实现protobuf定义的服务接口
+- 调用application层的业务逻辑
+- 处理gRPC特有的错误转换
+
+## 开发规则
+
+### 1. 数据传输对象(DTO)
+- 使用 [model/dto/](mdc:model/dto/) 目录下的数据结构
+- DTO只用于API层数据传输
+- 不包含业务逻辑
+
+### 2. 错误处理
+- HTTP: 使用统一的HTTP状态码映射
+- gRPC: 使用 `constant.ServiceErrorCodeToGRPCErrorCode` 转换
+- 不在此层处理业务逻辑错误，只做协议转换
+
+### 3. 请求验证
+- 基本的格式验证在此层进行
+- 业务规则验证交由application层处理
+- 使用DTO的validation标签进行基础验证
+
+### 4. 服务注册与发现
+- HTTP服务注册: `/health` 路径用于健康检查
+- gRPC服务注册: 支持健康检查协议
+- 使用Consul进行服务注册
+
+### 5. 中间件职责
+- 认证授权处理
+- 请求日志记录
+- 指标收集
+- 限流熔断等
+
+## 示例代码结构
+
+### HTTP Controller示例
+参考:
+- [transport/http/controller/health/controller.go](mdc:transport/http/controller/health/controller.go)
+- [transport/http/controller/user/auth.go](mdc:transport/http/controller/user/auth.go)
+
+### gRPC Controller示例
+参考:
+- [transport/grpc/controller/hello/controller.go](mdc:transport/grpc/controller/hello/controller.go)
+
+## 禁止事项
+
+1. ❌ 不能包含业务逻辑代码
+2. ❌ 不能直接操作数据库或缓存
+3. ❌ 不能直接调用基础设施层
+4. ❌ 不能在此层进行复杂的数据处理逻辑
+5. ❌ 不能跨越application层直接访问infrastructure层
+
+## 启动命令
+
+- HTTP服务启动: `go run main.go serveHTTP`
+- gRPC服务启动: `go run main.go serveGRPC`
+- 全部服务启动: `go run main.go` (默认行为)

@@ -1,0 +1,179 @@
+---
+globs: infrastructure/**/*.go
+description: infrastructure层基础设施开发规范
+---
+
+# Infrastructure层开发规范
+
+## 职责定义
+infrastructure层是基础设施层，负责所有底层相关的封装实现，包括数据库、缓存、消息队列、外部接口调用等。
+
+## 代码结构规范
+
+### 1. 基础设施接口定义
+```go
+type Infrastructure interface {
+    Store() store.Store
+    Cache() cache.Client
+    Close() error
+}
+```
+
+### 2. 具体实现结构
+```go
+type infrastructure struct {
+    store store.Store
+    cache cache.Client
+}
+```
+
+## 存储层(Store)规范
+
+### 1. 存储接口定义
+参考 [infrastructure/store/store.go](mdc:infrastructure/store/store.go):
+```go
+type Store interface {
+    Client() client.Client
+    Repository() repository.Repository
+}
+```
+
+### 2. 仓储模式实现
+参考 [infrastructure/store/repository/](mdc:infrastructure/store/repository/):
+- 每个实体对应一个Repository接口和实现
+- Repository负责数据访问逻辑
+- 使用 [infrastructure/store/client/](mdc:infrastructure/store/client/) 进行数据库操作
+
+### 3. 数据库客户端
+参考 [infrastructure/store/client/client.go](mdc:infrastructure/store/client/client.go):
+- 封装数据库连接和基本操作
+- 提供事务支持
+- 统一的错误处理
+
+## 缓存层(Cache)规范
+
+### 1. 缓存接口定义
+参考 [infrastructure/cache/client.go](mdc:infrastructure/cache/client.go):
+```go
+type Client interface {
+    Get(ctx context.Context, key string) (string, error)
+    Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
+    Delete(ctx context.Context, key string) error
+    Close() error
+}
+```
+
+### 2. Redis实现
+参考 [infrastructure/cache/redis.go](mdc:infrastructure/cache/redis.go):
+- 基于Redis的缓存实现
+- 支持序列化/反序列化
+- 连接池管理
+
+## 开发规则
+
+### 1. 依赖注入
+- 只能依赖 `resource.Resource` 接口
+- 通过构造函数注入依赖
+- 不能依赖上层(application/transport)
+
+### 2. 错误处理
+- 统一错误类型定义
+- 数据库错误转换为业务错误
+- 使用context进行超时控制
+
+### 3. 配置管理
+- 所有配置通过resource层获取
+- 支持配置热更新
+- 敏感信息安全处理
+
+### 4. 连接管理
+- 实现连接池
+- 支持优雅关闭
+- 健康检查机制
+
+### 5. 事务处理
+```go
+func (r *repository) TransactionExample(ctx context.Context) error {
+    tx, err := r.client.BeginTx(ctx)
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()
+    
+    // 业务操作
+    
+    return tx.Commit()
+}
+```
+
+### 6. 缓存策略
+- 设置合理的过期时间
+- 考虑缓存击穿、雪崩、穿透问题
+- 实现缓存预热机制
+
+## 数据模型规范
+
+### 1. 实体对象
+参考 [model/entity/](mdc:model/entity/):
+- 对应数据库表结构
+- 包含字段验证规则
+- 基础实体继承 [model/entity/base.go](mdc:model/entity/base.go)
+
+### 2. 查询条件
+- 使用结构体定义复杂查询条件
+- 支持分页、排序、过滤
+- 防止SQL注入
+
+## 外部服务集成规范
+
+### 1. HTTP客户端
+- 使用统一的HTTP客户端
+- 实现重试机制
+- 支持熔断器模式
+
+### 2. 消息队列(扩展)
+- 定义统一的生产者/消费者接口
+- 支持消息持久化
+- 实现消息幂等性处理
+
+### 3. 第三方API调用
+- 封装为独立的Client
+- 实现接口抽象
+- 支持Mock测试
+
+## 示例代码结构
+
+### Repository示例
+参考 [infrastructure/store/repository/user/repository.go](mdc:infrastructure/store/repository/user/repository.go):
+```go
+type Repository interface {
+    FindByID(ctx context.Context, id int64) (*entity.User, error)
+    Create(ctx context.Context, user *entity.User) error
+    Update(ctx context.Context, user *entity.User) error
+    Delete(ctx context.Context, id int64) error
+}
+```
+
+### Cache示例
+```go
+func (c *client) SetUser(ctx context.Context, userID int64, user *entity.User) error {
+    key := fmt.Sprintf("user:%d", userID)
+    return c.Set(ctx, key, user, 30*time.Minute)
+}
+```
+
+## 禁止事项
+
+1. ❌ 不能包含业务逻辑
+2. ❌ 不能直接依赖transport层或application层
+3. ❌ 不能在此层进行业务规则验证
+4. ❌ 不能硬编码业务相关的常量
+5. ❌ 不能直接返回数据库特定的错误类型
+
+## 性能优化建议
+
+1. 合理使用数据库索引
+2. 实现查询结果缓存
+3. 使用连接池避免频繁连接
+4. 实现批量操作接口
+5. 监控数据库性能指标

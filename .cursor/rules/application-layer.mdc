@@ -1,0 +1,81 @@
+---
+globs: application/**/*.go
+description: application层业务逻辑开发规范
+---
+
+# Application层开发规范
+
+## 职责定义
+application层是核心业务逻辑层，负责处理所有业务规则和业务流程。
+
+## 代码结构规范
+
+### 1. 服务接口定义
+```go
+type Service interface {
+    // 业务方法定义
+    MethodName(ctx context.Context, req *RequestType) (*ResponseType, error)
+}
+```
+
+### 2. 服务实现结构
+```go
+type service struct {
+    res   resource.Resource
+    infra infrastructure.Infrastructure
+    // 其他依赖
+}
+
+func NewService(res resource.Resource, infra infrastructure.Infrastructure) Service {
+    return &service{
+        res:   res,
+        infra: infra,
+    }
+}
+```
+
+## 开发规则
+
+### 1. 依赖注入
+- 必须通过构造函数注入依赖
+- 只能依赖 `resource.Resource` 和 `infrastructure.Infrastructure`
+- 不能直接依赖transport层
+
+### 2. 错误处理
+- 使用业务错误码，定义在 [constant/errors.go](mdc:constant/errors.go)
+- 业务异常必须返回明确的错误信息
+- 使用context进行请求追踪
+
+### 3. 日志记录
+```go
+ctx := context.Background()
+s.res.Logger().Info(ctx, "业务操作描述", zap.String("key", "value"))
+```
+
+### 4. 数据访问
+- 通过 `s.infra.Store()` 访问数据库
+- 通过 `s.infra.Cache()` 访问缓存
+- 不直接操作数据库连接
+
+### 5. 事务处理
+- 对于需要事务的操作，在application层控制事务边界
+- 使用infrastructure层提供的事务接口
+
+### 6. 业务验证
+- 使用 `s.res.Validator()` 进行数据验证
+- 业务规则验证在此层实现
+- 输入参数验证必须在业务逻辑前完成
+
+## 示例代码结构
+
+参考现有实现:
+- [application/health/service.go](mdc:application/health/service.go) - 健康检查服务
+- [application/user/service.go](mdc:application/user/service.go) - 用户业务服务
+- [application/user/auth.go](mdc:application/user/auth.go) - 认证相关业务逻辑
+
+## 禁止事项
+
+1. ❌ 不能导入transport层的任何包
+2. ❌ 不能直接操作HTTP请求/响应对象
+3. ❌ 不能包含协议特定的逻辑（HTTP状态码、gRPC状态等）
+4. ❌ 不能直接实例化基础设施层的具体实现

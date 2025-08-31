@@ -1,0 +1,251 @@
+---
+globs: resource/**/*.go
+description: resource层资源管理开发规范
+---
+
+# Resource层开发规范
+
+## 职责定义
+resource层是整个项目的资源层，提供配置、日志、指标、链路追踪等基础资源，可以被各层依赖。
+
+## 代码结构规范
+
+### 1. 资源接口定义
+参考 [resource/resource.go](mdc:resource/resource.go):
+```go
+type Resource interface {
+    Configuration() *config.Configuration
+    Logger() logger.Logger
+    Validator() validator.Validator
+    Metric() metric.PrometheusMetric
+    Tracer() tracer.Tracer
+    Discovery() discovery.Client
+    Close() error
+}
+```
+
+### 2. 资源实现结构
+```go
+type resource struct {
+    configuration *config.Configuration
+    logger        logger.Logger
+    validator     validator.Validator
+    metric        metric.PrometheusMetric
+    tracer        tracer.Tracer
+    discovery     discovery.Client
+}
+```
+
+## 配置管理规范
+
+### 1. 配置接口
+参考 [resource/config/configuration.go](mdc:resource/config/configuration.go):
+- 支持YAML格式配置文件
+- 支持配置热更新
+- 环境变量覆盖支持
+
+### 2. 配置文件结构
+配置文件位置: [configuration.yaml](mdc:configuration.yaml)
+- 服务配置(端口、环境等)
+- 数据库配置
+- Redis配置
+- 日志配置
+- 监控配置
+
+### 3. 配置使用示例
+```go
+config := res.Configuration()
+dbConfig := config.Database
+port := config.Service.HTTPPort
+```
+
+## 日志管理规范
+
+### 1. 日志接口
+参考 [resource/logger/logger.go](mdc:resource/logger/logger.go):
+```go
+type Logger interface {
+    Debug(ctx context.Context, msg string, fields ...zap.Field)
+    Info(ctx context.Context, msg string, fields ...zap.Field)
+    Warn(ctx context.Context, msg string, fields ...zap.Field)
+    Error(ctx context.Context, msg string, err error, fields ...zap.Field)
+}
+```
+
+### 2. 日志使用规范
+```go
+logger := res.Logger()
+ctx := context.Background()
+
+// 普通日志
+logger.Info(ctx, "用户登录成功", zap.String("userID", "123"))
+
+// 错误日志
+logger.Error(ctx, "数据库连接失败", err, zap.String("database", "user_db"))
+```
+
+### 3. 日志配置
+参考 [resource/logger/config.go](mdc:resource/logger/config.go):
+- 日志级别配置
+- 文件输出配置
+- 日志轮转配置
+
+## 指标监控规范
+
+### 1. 指标接口
+参考 [resource/metric/prometheus.go](mdc:resource/metric/prometheus.go):
+- 支持Counter、Gauge、Histogram指标
+- 自动暴露/metrics端点
+- 与Prometheus集成
+
+### 2. 指标使用示例
+```go
+metric := res.Metric()
+
+// 计数器指标
+metric.IncCounter("http_requests_total", map[string]string{
+    "method": "GET",
+    "path":   "/user/login",
+})
+
+// 直方图指标
+metric.ObserveHistogram("http_request_duration_seconds", 0.5, map[string]string{
+    "method": "POST",
+})
+```
+
+## 链路追踪规范
+
+### 1. 追踪接口
+参考 [resource/tracer/tracer.go](mdc:resource/tracer/tracer.go):
+- 支持分布式链路追踪
+- 与Jaeger/Zipkin集成
+- 自动埋点支持
+
+### 2. 追踪使用示例
+```go
+tracer := res.Tracer()
+span := tracer.StartSpan("user.login")
+defer span.End()
+
+// 添加标签
+span.SetTag("user.id", userID)
+span.SetTag("operation", "login")
+```
+
+## 数据验证规范
+
+### 1. 验证器接口
+参考 [resource/validator/validator.go](mdc:resource/validator/validator.go):
+- 基于tag的结构体验证
+- 自定义验证规则支持
+- 国际化错误信息
+
+### 2. 验证使用示例
+```go
+validator := res.Validator()
+
+type LoginRequest struct {
+    Username string `validate:"required,min=3,max=50"`
+    Password string `validate:"required,min=6"`
+}
+
+req := &LoginRequest{Username: "test", Password: "123456"}
+if err := validator.Struct(req); err != nil {
+    return err
+}
+```
+
+## 服务发现规范
+
+### 1. 发现接口
+参考 [resource/discovery/client.go](mdc:resource/discovery/client.go):
+```go
+type Client interface {
+    RegisterService(ctx context.Context, service *Service) (string, error)
+    DeregisterService(ctx context.Context, serviceID string) error
+    DiscoverService(ctx context.Context, serviceName string) ([]*Service, error)
+}
+```
+
+### 2. Consul实现
+参考 [resource/discovery/consul.go](mdc:resource/discovery/consul.go):
+- 服务自动注册/注销
+- 健康检查支持
+- 负载均衡发现
+
+### 3. 服务注册示例
+```go
+discovery := res.Discovery()
+serviceID, err := discovery.RegisterService(ctx, &discovery.Service{
+    Name: "user-service",
+    IP:   "192.168.1.100",
+    Port: 8080,
+    Type: discovery.ServiceTypeHTTP,
+    HealthCheckPath: "/health",
+})
+```
+
+## 开发规则
+
+### 1. 资源初始化
+- 按依赖顺序初始化资源
+- 处理初始化失败情况
+- 支持优雅关闭
+
+### 2. 错误处理
+- 资源初始化错误必须返回
+- 运行时错误需要记录日志
+- 提供默认值或降级策略
+
+### 3. 配置验证
+- 启动时验证配置完整性
+- 提供配置项说明文档
+- 支持配置项默认值
+
+### 4. 资源清理
+```go
+func (r *resource) Close() error {
+    closeFuncs := []func() error{
+        r.loggerFlusher,
+        r.metric.Close,
+        r.tracer.Close,
+    }
+    for _, closeFun := range closeFuncs {
+        if err := closeFun(); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+```
+
+## 扩展规范
+
+### 1. 新增资源类型
+- 定义资源接口
+- 实现具体类型
+- 更新Resource主接口
+- 添加到resource结构体
+
+### 2. 配置扩展
+- 在Configuration结构体中添加新配置
+- 更新配置文件模板
+- 添加配置验证逻辑
+
+## 示例代码结构
+
+参考各子模块实现:
+- 配置管理: [resource/config/](mdc:resource/config/)
+- 日志管理: [resource/logger/](mdc:resource/logger/)
+- 指标监控: [resource/metric/](mdc:resource/metric/)
+- 链路追踪: [resource/tracer/](mdc:resource/tracer/)
+- 服务发现: [resource/discovery/](mdc:resource/discovery/)
+- 数据验证: [resource/validator/](mdc:resource/validator/)
+
+## 禁止事项
+
+1. ❌ 不能依赖其他业务层(application/transport/infrastructure)
+2. ❌ 不能包含业务逻辑
+3. ❌ 不能直接操作业务数据
+4. ❌ 不能硬编码业务相关配置

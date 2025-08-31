@@ -1,0 +1,250 @@
+---
+globs: cmd/**/*.go,main.go
+description: cmd层启动入口开发规范
+---
+
+# CMD层开发规范
+
+## 职责定义
+cmd层是工程启动的入口，可以定义命令行参数，负责依赖注入和服务启动。
+
+## 代码结构规范
+
+### 1. 程序入口
+参考 [main.go](mdc:main.go):
+```go
+func main() {
+    if err := cmd.Execute(); err != nil {
+        slog.Error("application run failed:", slog.String("error", err.Error()))
+    }
+}
+```
+
+### 2. 命令执行器
+参考 [cmd/cmd.go](mdc:cmd/cmd.go):
+- 依赖初始化顺序: Resource → Infrastructure → Application → Transport
+- 统一错误处理
+- 上下文管理
+
+### 3. 命令定义
+参考 [cmd/cmder/](mdc:cmd/cmder/):
+- 使用Cobra框架定义命令
+- 支持子命令和参数
+- 优雅关闭处理
+
+## 命令行参数规范
+
+### 1. 根命令
+参考 [cmd/cmder/root.go](mdc:cmd/cmder/root.go):
+- 默认启动所有服务(HTTP + gRPC)
+- 支持优雅关闭
+- 错误日志记录
+
+### 2. HTTP服务命令
+参考 [cmd/cmder/http.go](mdc:cmd/cmder/http.go):
+```bash
+go run main.go serveHTTP  # 仅启动HTTP服务
+```
+
+### 3. gRPC服务命令
+参考 [cmd/cmder/grpc.go](mdc:cmd/cmder/grpc.go):
+```bash
+go run main.go serveGRPC  # 仅启动gRPC服务
+```
+
+### 4. 默认行为
+```bash
+go run main.go  # 启动所有服务
+```
+
+## 依赖注入规范
+
+### 1. 初始化顺序
+```go
+func initialContext() (*core.Context, error) {
+    // 1. 初始化资源层
+    res, err := resource.New("./configuration.yaml")
+    if err != nil {
+        return nil, err
+    }
+    
+    // 2. 初始化基础设施层
+    infra, err := infrastructure.New(res)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 3. 初始化应用层
+    app := application.New(res, infra)
+    
+    // 4. 初始化传输层
+    tsp := transport.New(res, infra, app)
+    
+    // 5. 创建上下文
+    ctx := core.NewContext(res, infra, tsp)
+    return ctx, nil
+}
+```
+
+### 2. 上下文管理
+参考 [cmd/core/context.go](mdc:cmd/core/context.go):
+- 封装所有依赖对象
+- 提供统一的访问接口
+- 支持资源清理
+
+### 3. 命令接口
+参考 [cmd/core/cmder.go](mdc:cmd/core/cmder.go):
+```go
+type Cmder interface {
+    Command(ctx *Context) *cobra.Command
+}
+
+type CmderFunc func(ctx *Context) *cobra.Command
+```
+
+## 服务启动规范
+
+### 1. HTTP服务启动
+```go
+func listenHTTP(ctx *core.Context, http http.Transport) {
+    go func() {
+        if err := http.Serve(); err != nil {
+            ctx.Resource.Logger().Error(context.Background(), "listen http failed", err)
+        }
+    }()
+    utils.GracefulShutdown(http.Shutdown, ctx.Resource.Close)
+}
+```
+
+### 2. gRPC服务启动
+```go
+func listenGrpc(ctx *core.Context, grpc grpc.Transport) {
+    go func() {
+        if err := grpc.Serve(); err != nil {
+            ctx.Resource.Logger().Error(context.Background(), "listen grpc failed", err)
+        }
+    }()
+    utils.GracefulShutdown(func() error {
+        grpc.GracefulStop()
+        return nil
+    }, ctx.Resource.Close)
+}
+```
+
+### 3. 全部服务启动
+```go
+func listenRoot(ctx *core.Context) {
+    go func() {
+        if err := ctx.Transport.ServeAll(); err != nil {
+            ctx.Resource.Logger().Error(context.Background(), "failed to listen root", err)
+        }
+    }()
+    utils.GracefulShutdown(ctx.Transport.ShutdownAll)
+}
+```
+
+## 配置管理规范
+
+### 1. 配置文件路径
+- 默认配置文件: `./configuration.yaml`
+- 支持通过命令行参数指定配置文件路径
+- 支持环境变量覆盖配置
+
+### 2. 配置验证
+- 启动时验证配置文件存在性
+- 验证必要配置项完整性
+- 提供配置错误的详细信息
+
+## 优雅关闭规范
+
+### 1. 信号处理
+使用 [utils/graceful.go](mdc:utils/graceful.go) 进行优雅关闭:
+- 监听SIGINT、SIGTERM信号
+- 按序关闭各个服务
+- 资源清理和连接关闭
+
+### 2. 关闭顺序
+1. 停止接收新请求
+2. 等待现有请求处理完成
+3. 关闭传输层服务
+4. 关闭基础设施层资源
+5. 关闭资源层服务
+
+### 3. 超时控制
+- 设置关闭超时时间
+- 强制关闭机制
+- 关闭状态日志记录
+
+## 错误处理规范
+
+### 1. 启动阶段错误
+- 依赖初始化失败立即退出
+- 记录详细错误信息
+- 返回适当的退出码
+
+### 2. 运行时错误
+- 记录错误日志
+- 尝试恢复或降级
+- 避免panic导致程序崩溃
+
+### 3. 关闭阶段错误
+- 记录关闭过程中的错误
+- 不阻塞关闭流程
+- 确保资源最终释放
+
+## 开发规则
+
+### 1. 命令定义
+- 使用Cobra框架
+- 提供清晰的帮助信息
+- 支持参数验证
+
+### 2. 依赖管理
+- 严格按照初始化顺序
+- 处理循环依赖
+- 支持依赖注入测试
+
+### 3. 日志记录
+- 启动过程关键节点记录日志
+- 错误信息包含足够的上下文
+- 使用结构化日志格式
+
+## 扩展规范
+
+### 1. 新增命令
+- 在cmder目录下创建新的命令文件
+- 实现Cmder接口
+- 注册到根命令中
+
+### 2. 新增启动模式
+- 定义新的启动函数
+- 实现优雅关闭逻辑
+- 添加相应的命令行参数
+
+## 使用示例
+
+### 1. 本地开发
+```bash
+go run main.go                    # 启动所有服务
+go run main.go serveHTTP         # 仅启动HTTP服务  
+go run main.go serveGRPC         # 仅启动gRPC服务
+```
+
+### 2. 生产部署
+```bash
+./app                            # 启动所有服务
+./app serveHTTP                  # 仅启动HTTP服务
+./app serveGRPC                  # 仅启动gRPC服务
+```
+
+### 3. 配置文件指定
+```bash
+go run main.go -config ./config/prod.yaml
+```
+
+## 禁止事项
+
+1. ❌ 不能包含业务逻辑代码
+2. ❌ 不能直接操作数据库或缓存
+3. ❌ 不能硬编码业务相关常量
+4. ❌ 不能在此层进行数据处理逻辑

@@ -1,0 +1,306 @@
+---
+globs: *.go
+description: Go代码通用开发规范和最佳实践
+---
+
+# Go代码通用开发规范
+
+## 命名规范
+
+### 1. 包名命名
+- 使用小写字母
+- 简短且有意义
+- 不使用下划线或驼峰命名
+- 例如: `user`, `cache`, `config`
+
+### 2. 变量和函数命名
+- 使用驼峰命名法(camelCase)
+- 私有成员小写开头: `userService`, `dbClient`
+- 公有成员大写开头: `UserService`, `New`, `Execute`
+- 布尔变量使用is/has前缀: `isActive`, `hasPermission`
+
+### 3. 常量命名
+- 使用大写字母和下划线: `MAX_RETRY_COUNT`, `DEFAULT_TIMEOUT`
+- 或使用驼峰命名: `MaxRetryCount`, `DefaultTimeout`
+
+### 4. 接口命名
+- 单个方法接口使用-er后缀: `Reader`, `Writer`, `Logger`
+- 多方法接口使用名词: `UserService`, `CacheClient`
+
+## 代码组织规范
+
+### 1. 文件结构
+```go
+package packagename
+
+// 导入包按以下顺序分组，组间用空行分隔
+import (
+    // 1. 标准库
+    "context"
+    "fmt"
+    
+    // 2. 第三方库
+    "github.com/gin-gonic/gin"
+    "go.uber.org/zap"
+    
+    // 3. 项目内部包
+    "github.com/chaihaobo/be-template/constant"
+    "github.com/chaihaobo/be-template/model"
+)
+
+// 常量定义
+const (
+    DefaultPort = 8080
+)
+
+// 类型定义
+type (
+    Service interface {
+        Method() error
+    }
+    
+    service struct {
+        // 字段定义
+    }
+)
+
+// 方法实现
+func (s *service) Method() error {
+    return nil
+}
+
+// 构造函数
+func NewService() Service {
+    return &service{}
+}
+```
+
+### 2. 方法组织顺序
+1. 接口方法实现
+2. 公有方法
+3. 私有方法
+4. 构造函数
+
+## 错误处理规范
+
+### 1. 错误定义
+使用 [constant/errors.go](mdc:constant/errors.go) 定义业务错误:
+```go
+var (
+    ErrUserNotFound = errors.New("用户不存在")
+    ErrInvalidPassword = errors.New("密码错误")
+)
+```
+
+### 2. 错误处理
+```go
+// ✅ 正确的错误处理
+result, err := someOperation()
+if err != nil {
+    return fmt.Errorf("操作失败: %w", err)
+}
+
+// ❌ 错误的错误处理
+result, _ := someOperation()  // 忽略错误
+```
+
+### 3. 错误包装
+- 使用 `fmt.Errorf("描述: %w", err)` 包装错误
+- 添加有意义的上下文信息
+- 保持错误链的完整性
+
+## 日志记录规范
+
+### 1. 日志级别使用
+```go
+logger := res.Logger()
+ctx := context.Background()
+
+// Debug: 调试信息
+logger.Debug(ctx, "数据库查询", zap.String("sql", query))
+
+// Info: 一般信息
+logger.Info(ctx, "用户登录成功", zap.String("userID", userID))
+
+// Warn: 警告信息
+logger.Warn(ctx, "缓存未命中", zap.String("key", cacheKey))
+
+// Error: 错误信息
+logger.Error(ctx, "数据库连接失败", err, zap.String("database", dbName))
+```
+
+### 2. 结构化日志
+- 使用zap.Field添加结构化信息
+- 避免字符串拼接
+- 包含足够的上下文信息
+
+## 函数设计规范
+
+### 1. 函数签名
+```go
+// ✅ 好的函数签名
+func FindUserByID(ctx context.Context, id int64) (*entity.User, error)
+
+// ❌ 不好的函数签名
+func FindUser(id interface{}) interface{}
+```
+
+### 2. 参数数量
+- 函数参数不超过3-4个
+- 多参数使用结构体封装
+- 使用Options模式处理可选参数
+
+### 3. 返回值
+- 错误必须是最后一个返回值
+- 使用命名返回值时要谨慎
+- 避免返回nil指针
+
+## Context使用规范
+
+### 1. Context传递
+```go
+// ✅ 正确的context使用
+func (s *service) ProcessUser(ctx context.Context, userID string) error {
+    // 传递context到下一层
+    user, err := s.repo.FindUser(ctx, userID)
+    if err != nil {
+        return err
+    }
+    return s.cache.SetUser(ctx, user)
+}
+```
+
+### 2. Context超时设置
+```go
+// 设置请求超时
+ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+```
+
+## 并发安全规范
+
+### 1. 互斥锁使用
+```go
+type service struct {
+    mu    sync.RWMutex
+    data  map[string]interface{}
+}
+
+func (s *service) Get(key string) interface{} {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    return s.data[key]
+}
+```
+
+### 2. Goroutine管理
+```go
+// 使用WaitGroup等待goroutine完成
+var wg sync.WaitGroup
+for i := 0; i < 10; i++ {
+    wg.Add(1)
+    go func(i int) {
+        defer wg.Done()
+        // 处理逻辑
+    }(i)
+}
+wg.Wait()
+```
+
+## 测试规范
+
+### 1. 测试文件命名
+- 测试文件以 `_test.go` 结尾
+- 测试函数以 `Test` 开头
+- 基准测试以 `Benchmark` 开头
+
+### 2. 测试结构
+```go
+func TestUserService_Login(t *testing.T) {
+    // Arrange
+    service := NewUserService()
+    req := &LoginRequest{Username: "test", Password: "password"}
+    
+    // Act
+    result, err := service.Login(context.Background(), req)
+    
+    // Assert
+    require.NoError(t, err)
+    assert.NotNil(t, result)
+    assert.Equal(t, "test", result.Username)
+}
+```
+
+## 性能优化规范
+
+### 1. 内存管理
+- 及时释放资源
+- 使用对象池复用对象
+- 避免内存泄漏
+
+### 2. 数据库优化
+- 使用索引优化查询
+- 避免N+1查询问题
+- 使用连接池管理连接
+
+### 3. 缓存使用
+- 合理设置过期时间
+- 避免缓存穿透和雪崩
+- 使用分布式锁防止并发问题
+
+## 代码质量规范
+
+### 1. 代码注释
+```go
+// UserService 用户业务服务接口
+// 提供用户相关的业务操作方法
+type UserService interface {
+    // Login 用户登录
+    // 验证用户凭证并返回访问令牌
+    Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error)
+}
+```
+
+### 2. 代码复杂度
+- 单个函数不超过50行
+- 嵌套层级不超过4层
+- 圈复杂度控制在10以下
+
+### 3. 代码重复
+- 相同逻辑提取为公共函数
+- 使用接口抽象通用行为
+- 避免复制粘贴代码
+
+## 安全规范
+
+### 1. 输入验证
+- 所有外部输入必须验证
+- 防止SQL注入和XSS攻击
+- 敏感信息不记录到日志
+
+### 2. 加密处理
+- 密码使用bcrypt哈希
+- 敏感数据传输使用HTTPS
+- API密钥安全存储
+
+## 工具使用规范
+
+### 1. 代码格式化
+```bash
+go fmt ./...          # 格式化代码
+go vet ./...          # 静态分析
+golangci-lint run     # 代码检查
+```
+
+### 2. 依赖管理
+```bash
+go mod tidy           # 整理依赖
+go mod vendor         # 创建vendor目录
+```
+
+### 3. 构建和测试
+```bash
+go build ./...        # 构建项目
+go test ./...         # 运行测试
+go test -race ./...   # 竞态检测
+```

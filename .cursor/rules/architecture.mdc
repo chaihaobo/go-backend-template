@@ -1,0 +1,79 @@
+---
+alwaysApply: true
+description: Go后端项目分层架构指南
+---
+
+# Go后端模板项目分层架构指南
+
+本项目采用分层架构设计，严格按照以下层级职责进行开发：
+
+## 层级依赖关系
+
+```
+main.go 
+  ↓
+cmd层 (启动入口)
+  ↓
+transport层 (API接口) → application层 (业务逻辑) → infrastructure层 (基础设施) → resource层 (资源)
+```
+
+## 各层职责
+
+### 1. resource层 - 资源层
+**文件路径**: [resource/](mdc:resource/)  
+**职责**: 整个项目可以依赖的资源，可以被各层依赖
+- 配置管理 ([configuration.go](mdc:resource/config/configuration.go))
+- 日志记录 ([logger.go](mdc:resource/logger/logger.go))
+- 指标监控 ([prometheus.go](mdc:resource/metric/prometheus.go))
+- 链路追踪 ([tracer.go](mdc:resource/tracer/tracer.go))
+- 服务发现 ([consul.go](mdc:resource/discovery/consul.go))
+- 数据验证 ([validator.go](mdc:resource/validator/validator.go))
+
+### 2. infrastructure层 - 基础设施层
+**文件路径**: [infrastructure/](mdc:infrastructure/)  
+**职责**: 底层相关的封装实现
+- 数据库操作 ([store/](mdc:infrastructure/store/))
+- 缓存服务 ([cache/](mdc:infrastructure/cache/))
+- 消息队列 (待扩展)
+- 外部接口调用 (待扩展)
+- **依赖**: 只能依赖resource层
+
+### 3. application层 - 业务逻辑层
+**文件路径**: [application/](mdc:application/)  
+**职责**: 核心业务逻辑编写
+- 业务服务实现 ([health/service.go](mdc:application/health/service.go), [user/service.go](mdc:application/user/service.go))
+- 与基础设施层交互实现业务逻辑
+- **依赖**: 可以依赖resource层和infrastructure层
+
+### 4. transport层 - 传输层
+**文件路径**: [transport/](mdc:transport/)  
+**职责**: API接口入口，各种API协议实现
+- HTTP接口 ([http/transport.go](mdc:transport/http/transport.go))
+- gRPC接口 ([grpc/transport.go](mdc:transport/grpc/transport.go))
+- 只做报文或数据结构的解析和转换
+- 传递数据到application层
+- **依赖**: 可以依赖resource层、infrastructure层和application层
+
+### 5. cmd层 - 启动入口层
+**文件路径**: [cmd/](mdc:cmd/)  
+**职责**: 工程启动入口
+- 命令行参数定义 ([cmder/root.go](mdc:cmd/cmder/root.go))
+- 启动HTTP服务 (`serveHTTP`)
+- 启动gRPC服务 (`serveGRPC`)
+- 依赖注入初始化 ([cmd.go](mdc:cmd/cmd.go))
+
+## 开发规则
+
+1. **严格遵守层级依赖**: 下层不能依赖上层，避免循环依赖
+2. **单一职责**: 每层只负责自己职责范围内的工作
+3. **接口优先**: 使用接口定义层间交互，便于测试和扩展
+4. **错误处理**: 统一错误处理机制，使用 [constant/errors.go](mdc:constant/errors.go)
+5. **配置管理**: 所有配置通过 [configuration.yaml](mdc:configuration.yaml) 统一管理
+
+## 文件组织规范
+
+- `model/entity/` - 实体对象定义
+- `model/dto/` - 数据传输对象
+- `utils/` - 通用工具函数
+- `constant/` - 常量定义
+- `proto/` - gRPC协议定义
