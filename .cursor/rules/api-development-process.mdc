@@ -1,0 +1,273 @@
+---
+alwaysApply: true
+description: API开发流程规范 - 需要修改的代码文件
+---
+
+# API开发流程 - 代码文件修改指南
+
+## 开发顺序说明
+
+开发一个新的API接口时，按照以下顺序修改代码文件：
+
+## 1. 数据模型定义
+
+### 1.1 实体模型 (Entity)
+**文件路径**: `model/entity/xxx.go`
+```go
+// 示例：model/entity/user.go
+type User struct {
+    Base
+    Username string `json:"username" gorm:"uniqueIndex;not null"`
+    Email    string `json:"email" gorm:"uniqueIndex;not null"`
+    Password string `json:"-" gorm:"not null"`
+    Status   int    `json:"status" gorm:"default:1"`
+}
+```
+
+### 1.2 数据传输对象 (DTO)
+**文件路径**: `model/dto/xxx/`
+- 请求DTO：`model/dto/xxx/request.go` 或具体的请求文件
+- 响应DTO：`model/dto/xxx/response.go` 或具体的响应文件
+
+```go
+// 示例：model/dto/user/create.go
+type CreateUserRequest struct {
+    Username string `json:"username" validate:"required,min=3,max=50"`
+    Email    string `json:"email" validate:"required,email"`
+    Password string `json:"password" validate:"required,min=6"`
+}
+
+type CreateUserResponse struct {
+    ID       int64  `json:"id"`
+    Username string `json:"username"`
+    Email    string `json:"email"`
+    Status   int    `json:"status"`
+    CreateAt int64  `json:"create_at"`
+}
+```
+
+## 2. 错误码定义
+
+**文件路径**: `constant/errors.go`
+```go
+var (
+    ErrUserAlreadyExists = errors.New("用户已存在")
+    ErrUserNotFound = errors.New("用户不存在")
+    ErrInvalidCredentials = errors.New("用户名或密码错误")
+)
+```
+
+**文件路径**: `constant/contextkey.go` (如需要新的错误码映射)
+```go
+var ServiceErrorCode2HTTPStatus = map[error]int{
+    ErrUserNotFound:       http.StatusNotFound,
+    ErrUserAlreadyExists: http.StatusConflict,
+}
+```
+
+## 3. Infrastructure层 - 数据访问
+
+### 3.1 Repository接口和实现
+**文件路径**: `infrastructure/store/repository/xxx/repository.go`
+```go
+// 示例：infrastructure/store/repository/user/repository.go
+type Repository interface {
+    Create(ctx context.Context, user *entity.User) error
+    FindByID(ctx context.Context, id int64) (*entity.User, error)
+    Update(ctx context.Context, user *entity.User) error
+    Delete(ctx context.Context, id int64) error
+}
+
+type repository struct {
+    client client.Client
+}
+
+func (r *repository) Create(ctx context.Context, user *entity.User) error {
+    return r.client.DB().WithContext(ctx).Create(user).Error
+}
+```
+
+### 3.2 更新Repository聚合
+**文件路径**: `infrastructure/store/repository/repository.go`
+```go
+type Repository interface {
+    User() user.Repository  // 新增这行
+}
+
+func (r *repository) User() user.Repository {  // 新增这个方法
+    return r.user
+}
+
+// 在New函数中初始化
+func New(client client.Client) Repository {
+    return &repository{
+        user: user.New(client),  // 新增这行
+    }
+}
+```
+
+## 4. Application层 - 业务逻辑
+
+### 4.1 Service接口和实现
+**文件路径**: `application/xxx/service.go`
+```go
+// 示例：application/user/service.go
+type Service interface {
+    CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.CreateUserResponse, error)
+    GetUser(ctx context.Context, id int64) (*dto.UserResponse, error)
+}
+
+type service struct {
+    res   resource.Resource
+    infra infrastructure.Infrastructure
+}
+
+func (s *service) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.CreateUserResponse, error) {
+    // 业务逻辑实现
+}
+
+func NewService(res resource.Resource, infra infrastructure.Infrastructure) Service {
+    return &service{
+        res:   res,
+        infra: infra,
+    }
+}
+```
+
+### 4.2 更新Application聚合
+**文件路径**: `application/application.go`
+```go
+type Application interface {
+    User() user.Service  // 如果是新模块，需要添加
+}
+
+func (a *application) User() user.Service {  // 如果是新模块，需要添加
+    return a.user
+}
+
+// 在New函数中初始化（如果是新模块）
+func New(res resource.Resource, infra infrastructure.Infrastructure) Application {
+    return &application{
+        user: user.NewService(res, infra),  // 如果是新模块，需要添加
+    }
+}
+```
+
+## 5. Transport层 - API接口
+
+### 5.1 HTTP Controller
+**文件路径**: `transport/http/controller/xxx/controller.go`
+```go
+// 示例：transport/http/controller/user/controller.go
+type Controller interface {
+    CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.CreateUserResponse, error)
+}
+
+type controller struct {
+    app application.Application
+}
+
+func (c *controller) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.CreateUserResponse, error) {
+    return c.app.User().CreateUser(ctx, req)
+}
+
+func NewController(app application.Application) Controller {
+    return &controller{app: app}
+}
+```
+
+### 5.2 更新HTTP Controller聚合
+**文件路径**: `transport/http/controller/controller.go`
+```go
+type Controller interface {
+    User() user.Controller  // 如果是新模块，需要添加
+}
+
+func (c *controller) User() user.Controller {  // 如果是新模块，需要添加
+    return c.user
+}
+
+// 在New函数中初始化（如果是新模块）
+func New(res resource.Resource, app application.Application) Controller {
+    return &controller{
+        user: user.NewController(app),  // 如果是新模块，需要添加
+    }
+}
+```
+
+### 5.3 注册HTTP路由
+**文件路径**: `transport/http/transport.go`
+- 在 `applyRoutes()` 方法中添加新路由：
+```go
+func (t *transport) applyRoutes() {
+    router := t.engine
+    userController := t.controller.User()
+    
+    // 添加新的路由
+    userGroup := router.Group("/user")
+    {
+        userGroup.POST("/create", restkit.AdaptToGinHandler(
+            restkit.HandlerFunc[*dto.CreateUserResponse](userController.CreateUser)))
+        userGroup.GET("/:id", restkit.AdaptToGinHandler(
+            restkit.HandlerFunc[*dto.UserResponse](userController.GetUser)))
+    }
+}
+```
+
+### 5.4 gRPC Controller (如果需要)
+**文件路径**: `transport/grpc/controller/xxx/controller.go`
+```go
+// 示例：transport/grpc/controller/user/controller.go
+type Controller struct {
+    app application.Application
+}
+
+func (c *Controller) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+    // gRPC接口实现
+}
+
+func NewController(app application.Application) *Controller {
+    return &Controller{app: app}
+}
+```
+
+### 5.5 Proto文件定义 (如果是gRPC)
+**文件路径**: `proto/xxx.proto`
+```protobuf
+// 定义gRPC服务和消息类型
+```
+
+## 开发检查清单
+
+按顺序检查以下文件是否已修改：
+
+### 数据模型
+- [ ] `model/entity/xxx.go` - 实体定义
+- [ ] `model/dto/xxx/` - DTO定义
+
+### 错误处理
+- [ ] `constant/errors.go` - 业务错误定义
+- [ ] `constant/contextkey.go` - 错误码映射（如需要）
+
+### Infrastructure层
+- [ ] `infrastructure/store/repository/xxx/repository.go` - Repository实现
+- [ ] `infrastructure/store/repository/repository.go` - Repository聚合更新
+
+### Application层
+- [ ] `application/xxx/service.go` - 业务逻辑实现
+- [ ] `application/application.go` - Application聚合更新（新模块）
+
+### Transport层
+- [ ] `transport/http/controller/xxx/controller.go` - HTTP Controller
+- [ ] `transport/http/controller/controller.go` - Controller聚合更新（新模块）
+- [ ] `transport/http/transport.go` - 路由注册
+- [ ] `transport/grpc/controller/xxx/controller.go` - gRPC Controller（可选）
+- [ ] `proto/xxx.proto` - Proto定义（gRPC可选）
+
+## 注意事项
+
+1. **严格按照顺序开发**：从底层到上层，避免循环依赖
+2. **新模块需要更新聚合**：在对应的聚合文件中添加新模块
+3. **错误处理统一**：所有业务错误在 `constant/errors.go` 中定义
+4. **DTO独立性**：每个模块的DTO放在独立目录中
+5. **路由注册**：HTTP路由需要在 `transport.go` 中手动注册
